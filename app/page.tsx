@@ -23,8 +23,8 @@ export default function Home() {
       const data = await res.json();
       if (!res.ok) throw new Error(data?.error || "Analyze failed");
       setResult(data as AnalysisResponse);
-    } catch (err: any) {
-      setError(err.message || String(err));
+    } catch (err: unknown) {
+      setError(err instanceof Error ? err.message : String(err));
     } finally {
       setLoading(false);
     }

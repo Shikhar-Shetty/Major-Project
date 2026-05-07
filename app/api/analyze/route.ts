@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { extractUrls } from "@/lib/urlUtils";
-import type { AnalysisResponse, VirusTotalResponse } from "@/lib/types";
+import type { AnalysisResponse, UrlAnalysisResult, VirusTotalResponse } from "@/lib/types";
 import {
   PHISHING_ANALYSIS_SYSTEM_PROMPT,
   PHISHING_ANALYSIS_USER_PROMPT,
@@ -11,6 +11,12 @@ import {
 async function callVirusTotal(url: string, apiKey: string): Promise<VirusTotalResponse> {
   if (!apiKey) return { error: "Missing VirusTotal API key" };
   try {
+    const urlId = Buffer.from(url, "utf8")
+      .toString("base64")
+      .replace(/=/g, "")
+      .replace(/\+/g, "-")
+      .replace(/\//g, "_");
+
     const form = new URLSearchParams();
     form.append("url", url);
 
@@ -26,33 +32,51 @@ async function callVirusTotal(url: string, apiKey: string): Promise<VirusTotalRe
       const text = await postRes.text().catch(() => "");
       return { error: `VirusTotal POST failed: ${postRes.status} ${postRes.statusText} ${text}` };
     }
-    const postJson = await postRes.json();
-    const analysisId = postJson?.data?.id;
+    const postJson = (await postRes.json()) as { data?: { id?: string } };
+    const analysisId = postJson.data?.id;
     if (!analysisId) return { error: "VirusTotal returned no analysis id" };
 
-    // GET url analysis
-    const getRes = await fetch(`https://www.virustotal.com/api/v3/urls/${analysisId}`, {
-      headers: { "x-apikey": apiKey },
-    });
-    if (!getRes.ok) {
-      const text = await getRes.text().catch(() => "");
-      return { error: `VirusTotal GET failed: ${getRes.status} ${getRes.statusText} ${text}` };
+    const fetchUrlReport = async () => {
+      const res = await fetch(`${VIRUSTOTAL_API.baseUrl}/urls/${urlId}`, {
+        headers: { "x-apikey": apiKey },
+      });
+
+      if (!res.ok) {
+        const text = await res.text().catch(() => "");
+        return { error: `VirusTotal URL report GET failed: ${res.status} ${res.statusText} ${text}` } as const;
+      }
+
+      return res.json() as Promise<{
+        data?: {
+          attributes?: {
+            last_analysis_stats?: Record<string, number>;
+            last_analysis_date?: number;
+            reputation?: number;
+          };
+        };
+      }>;
+    };
+
+    const reportJson = await fetchUrlReport();
+    if ("error" in reportJson) {
+      return { error: reportJson.error };
     }
-    const getJson = await getRes.json();
-    const stats = getJson?.data?.attributes?.last_analysis_stats || {};
-    const total = Object.values(stats).reduce((a: any, b: any) => a + b, 0);
+
+    const stats = reportJson.data?.attributes?.last_analysis_stats || {};
+    const total = Object.values(stats).reduce((sum, count) => sum + count, 0);
     const malicious = stats.malicious || 0;
     const suspicious = stats.suspicious || 0;
-    const detectionRatio = `${malicious + suspicious}/${total}`;
+    const detectionRatio = total > 0 ? `${malicious + suspicious}/${total}` : null;
 
     return {
-      raw: getJson,
+      raw: reportJson,
       stats,
       detectionRatio,
-      is_malicious: malicious > 0 || suspicious > 0,
+      is_malicious: total > 0 && (malicious > 0 || suspicious > 0),
     };
-  } catch (err) {
-    return { error: `VirusTotal fetch error: ${String(err)}` };
+  } catch (err: unknown) {
+    const error = err instanceof Error ? err.message : String(err);
+    return { error: `VirusTotal fetch error: ${error}` };
   }
 }
 
@@ -107,7 +131,7 @@ async function callGroq(prompt: string, apiKey?: string) {
       const jsonStr = content.substring(firstBrace, lastBrace + 1);
       try {
         return JSON.parse(jsonStr);
-      } catch (e) {
+      } catch {
         return { raw: content };
       }
     }
@@ -115,12 +139,13 @@ async function callGroq(prompt: string, apiKey?: string) {
     // fallback: try parse as json
     try {
       return JSON.parse(content);
-    } catch (e) {
+    } catch {
       return { raw: content };
     }
-  } catch (err: any) {
-    console.error("Groq fetch error:", err);
-    return { error: `Groq fetch error: ${String(err)}`, stack: err?.stack || null };
+  } catch (err: unknown) {
+    const error = err instanceof Error ? err : new Error(String(err));
+    console.error("Groq fetch error:", error);
+    return { error: `Groq fetch error: ${error.message}`, stack: error.stack || null };
   }
 }
 
@@ -136,7 +161,7 @@ export async function POST(req: Request) {
 
     const urls = await extractUrls(email);
 
-    const url_analysis: any[] = [];
+    const url_analysis: UrlAnalysisResult[] = [];
     for (const u of urls) {
       const vt = await callVirusTotal(u, vtKey);
       if (vt?.error) {
@@ -155,9 +180,9 @@ export async function POST(req: Request) {
     const diagnostics = { hasGroqKey: !!groqKey, hasVirusTotalKey: !!vtKey };
 
     // If groqResp already looks like the expected JSON, use it. Otherwise merge.
-    let finalJson: any = null;
+    let finalJson: AnalysisResponse | null = null;
     if (groqResp && typeof groqResp === "object" && groqResp.verdict) {
-      finalJson = groqResp;
+      finalJson = groqResp as AnalysisResponse;
     } else if (groqResp && groqResp.raw) {
       // LLM returned raw text that couldn't be parsed; include it in response
       finalJson = {
@@ -190,7 +215,8 @@ export async function POST(req: Request) {
     finalJson.url_analysis = url_analysis;
 
     return NextResponse.json(finalJson);
-  } catch (err: any) {
-    return NextResponse.json({ error: String(err) }, { status: 500 });
+  } catch (err: unknown) {
+    const error = err instanceof Error ? err.message : String(err);
+    return NextResponse.json({ error }, { status: 500 });
   }
 }

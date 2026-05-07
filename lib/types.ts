@@ -7,7 +7,7 @@ export interface UrlAnalysisResult {
   is_malicious?: boolean;
   virus_total_score?: string | null;
   error?: string;
-  raw?: any;
+  raw?: unknown;
 }
 
 export interface AnalysisResponse {
@@ -29,8 +29,8 @@ export interface AnalysisResponse {
 
 export interface VirusTotalResponse {
   error?: string;
-  raw?: any;
-  stats?: any;
-  detectionRatio?: string;
+  raw?: unknown;
+  stats?: Record<string, number>;
+  detectionRatio?: string | null;
   is_malicious?: boolean;
 }

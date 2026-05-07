@@ -1,9 +1,9 @@
 export const phishingEmails = [
-  `Subject: Unauthorized Login Attempt\n\nWe noticed a login attempt from a new device. Verify your identity at https://bank-example.verify-login.com or your account will be locked.`,
-  `Subject: Parcel Delivery Failed\n\nYour package cannot be delivered. Please confirm your details here: http://track-delivery.example.com/confirm`,
-  `Subject: Password Reset Required\n\nWe've detected suspicious activity. Reset your password immediately: https://reset.example.com`,
-  `Subject: Invoice Overdue\n\nYou have an overdue invoice. View details and pay now: http://invoices.example-pay.com`,
-  `Subject: HR - Benefit Update\n\nPlease sign in to the company portal to review benefits: https://company-portal.example.com/login`,
+  `Subject: Urgent PayPal Security Alert\n\nWe detected unauthorized access to your PayPal account. Verify your identity immediately: http://paypa1.com/verify to restore full account access.`,
+  `Subject: Amazon - Account Verification Required\n\nYour Amazon account has been flagged for suspicious activity. Confirm your details: http://amaz0n-verify.xyz/account-security`,
+  `Subject: Critical: Apple ID Account Lock\n\nYour Apple ID will be permanently locked. Verify now: https://apple-id-security.xyz/confirm-identity`,
+  `Subject: Microsoft 365 - Immediate Action Required\n\nYour Microsoft account has expired. Renew subscription: http://microsoft-account-verify.xyz/renew`,
+  `Subject: Bank of America - Account Under Review\n\nYour BofA account requires immediate verification. Click here: http://verify-bofa-security.xyz/account-review`,
 ];
 
 export const legitEmails = [

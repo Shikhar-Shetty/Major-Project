@@ -2,6 +2,8 @@
  * System prompts and configuration for phishing analysis
  */
 
+import type { UrlAnalysisResult } from "./types";
+
 export const PHISHING_ANALYSIS_SYSTEM_PROMPT = `You are a cybersecurity AI analyst specialized in phishing detection, social engineering analysis, and email threat intelligence.
 
 Requirements:
@@ -12,7 +14,11 @@ Requirements:
 
 Return STRICT JSON exactly as specified with keys: verdict, confidence, threat_level, mitre_attack, reasoning, url_analysis, summary.`;
 
-export const PHISHING_ANALYSIS_USER_PROMPT = (email: string, urls: string[], urlAnalysis: any[]): string => {
+export const PHISHING_ANALYSIS_USER_PROMPT = (
+  email: string,
+  urls: string[],
+  urlAnalysis: ReadonlyArray<UrlAnalysisResult>,
+): string => {
   return `Analyze this email for phishing indicators:
 
 Email Content:
