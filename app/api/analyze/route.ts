@@ -136,7 +136,6 @@ async function callGroq(prompt: string, apiKey?: string) {
       }
     }
 
-    // fallback: try parse as json
     try {
       return JSON.parse(content);
     } catch {
@@ -171,20 +170,16 @@ export async function POST(req: Request) {
       }
     }
 
-    // Build analysis prompt
     const analysisPrompt = PHISHING_ANALYSIS_USER_PROMPT(email, urls, url_analysis);
 
     const groqResp = await callGroq(analysisPrompt, groqKey);
 
-    // Diagnostic flags about keys
     const diagnostics = { hasGroqKey: !!groqKey, hasVirusTotalKey: !!vtKey };
 
-    // If groqResp already looks like the expected JSON, use it. Otherwise merge.
     let finalJson: AnalysisResponse | null = null;
     if (groqResp && typeof groqResp === "object" && groqResp.verdict) {
       finalJson = groqResp as AnalysisResponse;
     } else if (groqResp && groqResp.raw) {
-      // LLM returned raw text that couldn't be parsed; include it in response
       finalJson = {
         verdict: "Unknown",
         confidence: 0,
@@ -211,7 +206,6 @@ export async function POST(req: Request) {
       };
     }
 
-    // Ensure url_analysis is attached
     finalJson.url_analysis = url_analysis;
 
     return NextResponse.json(finalJson);
