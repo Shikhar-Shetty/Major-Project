@@ -1,3 +1,100 @@
+# PhishAI — Phase-1 Prototype
+
+AI-powered phishing email detection system using Next.js, TypeScript, Groq LLM, and VirusTotal API.
+
+## Quick Start
+
+1. **Install dependencies:**
+```bash
+npm install
+```
+
+2. **Set environment variables in `.env`:**
+```env
+GROQ_API_KEY=your_groq_api_key
+VIRUS_TOTAL_API_KEY=your_virustotal_api_key
+```
+
+3. **Run development server:**
+```bash
+npm run dev
+```
+
+4. **Open browser:**
+Navigate to `http://localhost:3000`
+
+## Project Structure
+
+See [lib/README.md](lib/README.md) for detailed folder organization and file purposes.
+
+```
+├── app/                  # Next.js App Router
+│   ├── api/analyze/     # Phishing analysis API endpoint
+│   ├── page.tsx         # Frontend dashboard UI
+│   └── globals.css      # Styles
+├── lib/                 # Reusable utilities & configuration
+│   ├── constants.ts     # Prompts, API config, MITRE types
+│   ├── types.ts         # TypeScript interfaces
+│   └── urlUtils.ts      # URL extraction & validation
+├── data/                # Test datasets
+│   └── testEmails.ts    # Sample phishing/legitimate emails
+└── public/              # Static assets
+```
+
+## Core Features
+
+- **Phishing Detection**: LLM-based email analysis with reasoning
+- **URL Threat Checking**: VirusTotal integration for malicious URL detection
+- **MITRE ATT&CK Mapping**: Classification of attack techniques
+- **Confidence Scoring**: 0-100 confidence metric
+- **Explainable AI**: Detailed reasoning for each verdict
+
+## API Endpoint
+
+**POST** `/api/analyze`
+
+### Request
+```json
+{
+  "email": "Subject: Urgent...\n\nBody content..."
+}
+```
+
+### Response
+```json
+{
+  "verdict": "Phishing|Legitimate|Unknown",
+  "confidence": 85,
+  "threat_level": "High",
+  "mitre_attack": "T1566.002",
+  "reasoning": ["..."],
+  "url_analysis": [{"url": "...", "is_malicious": true}],
+  "summary": "..."
+}
+```
+
+## Configuration
+
+All configuration centralized in `lib/constants.ts`:
+- Groq endpoint, model, temperature
+- System & user prompts for LLM
+- MITRE ATT&CK type mappings
+- VirusTotal API URLs
+
+## Tech Stack
+
+- **Frontend**: Next.js 16+ (App Router), React 19, TypeScript, TailwindCSS
+- **Backend**: Next.js API Routes
+- **LLM**: Groq API (Llama 3.3 70B)
+- **Security**: VirusTotal API
+- **Styling**: TailwindCSS v4
+
+## Notes
+
+- No database required (stateless)
+- No authentication layer
+- Phase-1 prototype for academic/demo purposes
+- Adjust Groq/VirusTotal endpoints in `lib/constants.ts` if needed
 This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
 
 ## Getting Started
